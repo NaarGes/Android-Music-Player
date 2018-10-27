@@ -40,4 +40,6 @@ dependencies {
 
     // exo player
     implementation 'com.google.android.exoplayer:exoplayer:2.9.0'
+
+    implementation 'com.android.support:support-media-compat:26.+'
 }

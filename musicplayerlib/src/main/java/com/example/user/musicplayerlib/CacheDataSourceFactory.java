@@ -24,7 +24,7 @@ public class CacheDataSourceFactory implements DataSource.Factory {
 
     private static SimpleCache simpleCache;
 
-    public CacheDataSourceFactory(Context context, long maxCacheSize, long maxFileSize) {
+    CacheDataSourceFactory(Context context, long maxCacheSize, long maxFileSize) {
         super();
         this.context = context;
         this.maxCacheSize = maxCacheSize;
