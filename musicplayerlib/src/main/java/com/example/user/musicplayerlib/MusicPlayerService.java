@@ -3,16 +3,20 @@ package com.example.user.musicplayerlib;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
+import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -21,6 +25,7 @@ import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.LoopingMediaSource;
@@ -33,6 +38,8 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import java.util.ArrayList;
 import java.util.List;
 
+import static android.support.constraint.Constraints.TAG;
+
 public class MusicPlayerService extends Service implements Player.EventListener {
 
     private static final String LOG_TAG = MusicPlayerService.class.getSimpleName();
@@ -40,8 +47,11 @@ public class MusicPlayerService extends Service implements Player.EventListener 
     private SimpleExoPlayer exoPlayer;
     private MediaSessionCompat session;
     private PlaybackStateCompat.Builder stateBuilder;
+    private AudioAttributes audioAttributes;
     private boolean isBounded;
     private Uri mediaUri = null;
+
+    private List<Uri> playListUris;
 
     private PlayerNotificationManager notificationManager;
 
@@ -50,6 +60,11 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         super.onCreate();
 
         // initialize media session
+        playListUris = new ArrayList<>();
+        audioAttributes = new AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.CONTENT_TYPE_MUSIC)
+                .build();
         initializeMediaSession();
         initializePlayer();
     }
@@ -109,17 +124,10 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         this.mediaUri = mediaUri;
     }
 
-
-    private void releasePlayer() {
-         stopForeground(true);
-        exoPlayer.stop();
-        exoPlayer.release();
-        exoPlayer = null;
-    }
-
     // one music
     public MediaSource buildMediaSource(Uri musicUri) {
 
+        playListUris.add(musicUri);
         CacheDataSourceFactory cacheDataSourceFactory = new CacheDataSourceFactory(
                 this,
                 100 * 1024 * 1024,
@@ -138,6 +146,14 @@ public class MusicPlayerService extends Service implements Player.EventListener 
     // list of musics
     public MediaSource buildMediaSource(List<Uri> musicUris) {
 
+        String[] songs = new String[2];
+
+        for (int i=0; i<musicUris.size();i++)
+            songs[i] = String.valueOf(musicUris.get(i));
+
+        getPlayList(this, songs);
+
+        playListUris.addAll(musicUris);
         CacheDataSourceFactory cacheDataSourceFactory = new CacheDataSourceFactory(
                 this,
                 100 * 1024 * 1024,
@@ -155,35 +171,8 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         return new LoopingMediaSource(new ConcatenatingMediaSource(music1, music2));
     }
 
-
-    private void initializePlayer() {
-        if (exoPlayer == null) {
-            // Create an instance of the ExoPlayer.;
-            exoPlayer = ExoPlayerFactory.newSimpleInstance(
-                    this,
-                    new DefaultRenderersFactory(this),
-                    new DefaultTrackSelector(),
-                    new DefaultLoadControl()
-            );
-            // handling audio focus todo need to test
-            //exoPlayer.setAudioAttributes(audioAttributes, true);
-
-           // exoPlayer.seekTo(currentWindow, playBackPosition);
-
-            exoPlayer.addListener(this);
-            // todo use for instead
-            Uri uri1 = Uri.parse(getApplicationContext().getString(R.string.girls_like_u_mp3));
-            Uri uri2 = Uri.parse(getApplicationContext().getString(R.string.nem_mp3));
-
-            List<Uri> uris = new ArrayList<>();
-            uris.add(uri1);
-            uris.add(uri2);
-
-            //MediaSource mediaSource = buildMediaSource(uri2);
-            MediaSource mediaSource = buildMediaSource(uris);
-            exoPlayer.prepare(mediaSource, true, false);
-            exoPlayer.setPlayWhenReady(true);
-        }
+    public List<Uri> getPlayListUris() {
+        return playListUris;
     }
 
     private void initializeMediaSession() {
@@ -219,6 +208,43 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         // Start the Media Session since the activity is active.
         session.setActive(true);
 
+    }
+
+    private void initializePlayer() {
+        if (exoPlayer == null) {
+            // Create an instance of the ExoPlayer.;
+            exoPlayer = ExoPlayerFactory.newSimpleInstance(
+                    this,
+                    new DefaultRenderersFactory(this),
+                    new DefaultTrackSelector(),
+                    new DefaultLoadControl()
+            );
+            // handling audio focus todo need to test
+            exoPlayer.setAudioAttributes(audioAttributes, true);
+
+           // exoPlayer.seekTo(currentWindow, playBackPosition);
+
+            exoPlayer.addListener(this);
+            // todo use for instead
+            Uri uri1 = Uri.parse(getApplicationContext().getString(R.string.girls_like_u_mp3));
+            Uri uri2 = Uri.parse(getApplicationContext().getString(R.string.nem_mp3));
+
+            List<Uri> uris = new ArrayList<>();
+            uris.add(uri1);
+            uris.add(uri2);
+
+            //MediaSource mediaSource = buildMediaSource(uri2);
+            MediaSource mediaSource = buildMediaSource(uris);
+            exoPlayer.prepare(mediaSource, true, false);
+            exoPlayer.setPlayWhenReady(true);
+        }
+    }
+
+    private void releasePlayer() {
+        stopForeground(true);
+        exoPlayer.stop();
+        exoPlayer.release();
+        exoPlayer = null;
     }
 
     @Override
@@ -314,5 +340,61 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         public void onSkipToPrevious() {
             exoPlayer.seekTo(0);
         }
+    }
+
+    // fixme illegal exception
+    public ArrayList<Song> getPlayList(Context context, String[] uris) {
+
+        ArrayList<Song> songList = new ArrayList<>();
+            String sortOrder = null;
+            try {
+                String[] proj = {MediaStore.Audio.Media._ID,
+                        MediaStore.Audio.Media.TITLE,
+                        MediaStore.Audio.Media.ARTIST,
+                        MediaStore.Audio.Media.DURATION,
+                        MediaStore.Audio.Media.DATA,
+                        MediaStore.Audio.Media.ALBUM,
+                        MediaStore.Audio.Media.ALBUM_ID
+                };
+
+                String selection = null;
+
+                String[] selectionArgs = uris;
+
+
+                Cursor audioCursor = context.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                        proj, selection, selectionArgs, sortOrder);
+
+                if (audioCursor != null) {
+                    if (audioCursor.moveToFirst()) {
+                        do {
+                            int audioTitle = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
+                            int audioartist = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+                            int audioduration = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
+                            int audiodata = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+                            int audioalbum = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
+                            int audioalbumid = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
+                            int song_id = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
+
+
+                            Song song = new Song();
+                            song.setUri(audioCursor.getString(audiodata));
+                            song.setTitle(audioCursor.getString(audioTitle));
+                            song.setDuration((audioCursor.getString(audioduration)));
+                            song.setArtist(audioCursor.getString(audioartist));
+                            song.setAlbum(audioCursor.getString(audioalbum));
+                            song.setId(audioCursor.getLong(song_id));
+                            //song.setAlbumArt((ContentUris.withAppendedId(albumArtUri, audioCursor.getLong(audioalbumid))).toString());
+                            Log.e(TAG, "getPlayList: "+song.getUri() + " "+song.getTitle()+" "+ song.getArtist());
+                            songList.add(song);
+                        } while (audioCursor.moveToNext());
+                    }
+                }
+                assert audioCursor != null;
+                audioCursor.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        return songList;
     }
 }

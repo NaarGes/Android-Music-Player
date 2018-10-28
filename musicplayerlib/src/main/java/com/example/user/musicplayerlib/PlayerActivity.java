@@ -19,7 +19,6 @@ import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 
 public class PlayerActivity extends AppCompatActivity implements ServiceConnection {
 
-    //private MusicPlayerFragment musicPlayerFragment;
     private boolean bound;
     private PlayerView playerView;
     private MusicPlayerService musicPlayerService;

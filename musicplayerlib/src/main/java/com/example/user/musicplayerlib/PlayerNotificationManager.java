@@ -1,5 +1,7 @@
 package com.example.user.musicplayerlib;
 
+import android.annotation.SuppressLint;
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.support.v4.app.NotificationCompat;
@@ -19,6 +21,7 @@ public class PlayerNotificationManager {
         this.service = service;
     }
 
+    @SuppressLint("ResourceAsColor")
     void startNotify(PlaybackStateCompat build) {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(service, CHANNEL_ID);
@@ -38,14 +41,16 @@ public class PlayerNotificationManager {
                 MediaButtonReceiver.buildMediaButtonPendingIntent(service,
                         PlaybackStateCompat.ACTION_PLAY_PAUSE));
 
-        Intent notificationIntent = new Intent(service, PlayerActivity.class);
+        Intent notificatonIntent = new Intent(service, PlayerActivity.class);
         PendingIntent contentPendingIntent = PendingIntent.getActivity
-                (service, 0, notificationIntent, 0);
+                (service, 0, notificatonIntent, 0);
 
         builder
                 .setContentTitle("Music Player")
                 .setContentIntent(contentPendingIntent)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setSmallIcon(R.drawable.ic_music)
+                .setColor(R.color.white)
                 .addAction(playPauseAction)
                 .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_STOP));
 
