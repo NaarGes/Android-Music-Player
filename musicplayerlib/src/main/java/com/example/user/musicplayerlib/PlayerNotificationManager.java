@@ -37,13 +37,23 @@ public class PlayerNotificationManager {
         }
 
         NotificationCompat.Action playPauseAction = new NotificationCompat.Action(
-                icon, play_pause,
+                icon, "",
                 MediaButtonReceiver.buildMediaButtonPendingIntent(service,
                         PlaybackStateCompat.ACTION_PLAY_PAUSE));
 
-        Intent notificatonIntent = new Intent(service, PlayerActivity.class);
+        NotificationCompat.Action nextAction = new NotificationCompat.Action(
+                R.drawable.exo_icon_next, "", //String.valueOf(R.string.next),
+                MediaButtonReceiver.buildMediaButtonPendingIntent(service,
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT));
+
+        NotificationCompat.Action prevAction = new NotificationCompat.Action(
+                R.drawable.exo_icon_previous, "", //String.valueOf(R.string.previous),
+                MediaButtonReceiver.buildMediaButtonPendingIntent(service,
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS));
+
+        Intent notificationIntent = new Intent(service, PlayerActivity.class);
         PendingIntent contentPendingIntent = PendingIntent.getActivity
-                (service, 0, notificatonIntent, 0);
+                (service, 0, notificationIntent, 0);
 
         builder
                 .setContentTitle("Music Player")
@@ -51,7 +61,9 @@ public class PlayerNotificationManager {
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setSmallIcon(R.drawable.ic_music)
                 .setColor(R.color.white)
+                .addAction(prevAction)
                 .addAction(playPauseAction)
+                .addAction(nextAction)
                 .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_STOP));
 
         if (build.getState() == PlaybackStateCompat.STATE_PLAYING)
@@ -65,6 +77,5 @@ public class PlayerNotificationManager {
     public void cancelNotify() {
         service.stopForeground(true);
     }
-
 
 }

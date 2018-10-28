@@ -195,7 +195,8 @@ public class MusicPlayerService extends Service implements Player.EventListener 
 
         // Set an initial PlaybackState with ACTION_PLAY, so media buttons can start the player.
         stateBuilder = new PlaybackStateCompat.Builder()
-                .setActions(PlaybackStateCompat.ACTION_SKIP_TO_NEXT |
+                .setActions(PlaybackStateCompat.ACTION_PLAY |
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT |
                         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
                         PlaybackStateCompat.ACTION_STOP |
                         PlaybackStateCompat.ACTION_PLAY_PAUSE);
@@ -323,12 +324,6 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         }
 
         @Override
-        public void onSkipToNext() {
-            super.onSkipToNext();
-            Log.i(LOG_TAG, "MySessionCallback skip to next");
-        }
-
-        @Override
         public void onStop() {
             super.onStop();
             if (!isBounded)
@@ -337,10 +332,41 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         }
 
         @Override
+        public void onSkipToNext() {
+            super.onSkipToNext();
+            // todo skip to next track
+            //setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_NEXT);
+            Log.i(LOG_TAG, "MySessionCallback skip to next");
+        }
+
+        @Override
         public void onSkipToPrevious() {
+
             exoPlayer.seekTo(0);
+            // todo skip to previous track
+            //setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
+            Log.i(LOG_TAG, "MySessionCallback skip to next");
         }
     }
+
+    /*private void setMediaPlaybackState(int state) {
+        PlaybackStateCompat.Builder playbackstateBuilder = new PlaybackStateCompat.Builder();
+        switch (state) {
+            case PlaybackStateCompat.STATE_PLAYING: {
+                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PAUSE
+                        | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
+                break;
+            }
+            default: {
+                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PLAY
+                        | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
+                break;
+            }
+        }
+
+        playbackstateBuilder.setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 0);
+        session.setPlaybackState(playbackstateBuilder.build());
+    }*/
 
     // fixme illegal exception
     public ArrayList<Song> getPlayList(Context context, String[] uris) {

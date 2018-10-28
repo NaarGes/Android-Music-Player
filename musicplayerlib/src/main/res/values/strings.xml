@@ -8,4 +8,6 @@
     <string name="pause">pause</string>
     <string name="play">play</string>
     <string name="restart">restart</string>
+    <string name="next">next</string>
+    <string name="previous">previous</string>
 </resources>
