@@ -1,16 +1,13 @@
 package com.example.user.musicplayerlib;
 
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationCompat;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -39,13 +36,14 @@ import java.util.List;
 public class MusicPlayerService extends Service implements Player.EventListener {
 
     private static final String LOG_TAG = MusicPlayerService.class.getSimpleName();
-    private static final String CHANNEL_ID = "ServiceChannel";
     private final IBinder binder = new MyBinder();
     private SimpleExoPlayer exoPlayer;
     private MediaSessionCompat session;
     private PlaybackStateCompat.Builder stateBuilder;
     private boolean isBounded;
     private Uri mediaUri = null;
+
+    private PlayerNotificationManager notificationManager;
 
     @Override
     public void onCreate() {
@@ -240,6 +238,8 @@ public class MusicPlayerService extends Service implements Player.EventListener 
 
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+
+        notificationManager = new PlayerNotificationManager(this);
         if ((playbackState == Player.STATE_READY) && playWhenReady) {
             Log.i(LOG_TAG, "onPlayerStateChanged palying");
 
@@ -254,57 +254,9 @@ public class MusicPlayerService extends Service implements Player.EventListener 
             stateBuilder.setState(PlaybackStateCompat.STATE_STOPPED, exoPlayer.getCurrentPosition(), 1f);
         }
         session.setPlaybackState(stateBuilder.build());
-        showNotification(stateBuilder.build());
+        notificationManager.startNotify(stateBuilder.build());
     }
 
-    private void showNotification(PlaybackStateCompat build) {
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
-
-        int icon;
-        String play_pause;
-        if (build.getState() == PlaybackStateCompat.STATE_PLAYING) {
-            icon = R.drawable.exo_controls_pause;
-            play_pause = getString(R.string.pause);
-        } else {
-            icon = R.drawable.exo_controls_play;
-            play_pause = getString(R.string.play);
-        }
-
-        NotificationCompat.Action playPauseAction = new NotificationCompat.Action(
-                R.drawable.ic_music, play_pause,
-                MediaButtonReceiver.buildMediaButtonPendingIntent(this,
-                        PlaybackStateCompat.ACTION_PLAY_PAUSE));
-
-        NotificationCompat.Action restartAction = new android.support.v4.app.NotificationCompat
-                .Action(R.drawable.exo_controls_previous, getString(R.string.restart),
-                MediaButtonReceiver.buildMediaButtonPendingIntent
-                        (this, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS));
-
-        Intent notificationIntent = new Intent(this, PlayerActivity.class);
-        PendingIntent contentPendingIntent = PendingIntent.getActivity
-                (this, 0, notificationIntent, 0);
-
-        builder.setContentTitle("Music Player")
-                .setAutoCancel(true)
-                .setContentIntent(contentPendingIntent) // fixme doesn't show if is running
-                .setSmallIcon(R.drawable.ic_music)
-              //  .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .addAction(restartAction)
-                .addAction(playPauseAction)
-                .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(getApplicationContext(), PlaybackStateCompat.ACTION_STOP));
-                //.build();
-
-       /* NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(1, builder.build());*/
-
-        if (build.getState() == PlaybackStateCompat.STATE_PLAYING)
-            startForeground(10, builder.build());
-        else {
-            startForeground(10, builder.build());
-            stopForeground(false);
-        }
-    }
 
     @Override
     public void onRepeatModeChanged(int repeatMode) {

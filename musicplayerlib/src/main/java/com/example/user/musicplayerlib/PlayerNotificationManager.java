@@ -2,69 +2,59 @@ package com.example.user.musicplayerlib;
 
 import android.app.PendingIntent;
 import android.content.Intent;
-import android.content.res.Resources;
-import android.graphics.BitmapFactory;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.media.session.MediaButtonReceiver;
+import android.support.v4.media.session.PlaybackStateCompat;
 
 
 public class PlayerNotificationManager {
 
     private MusicPlayerService service;
-    private String appName;
-    private Resources resources;
 
-    private final int REQUEST_CODE_PAUSE = 1;
-    private final int REQUEST_CODE_PLAY = 2;
-    private final int REQUEST_CODE_STOP = 3;
-    private final int NOTIFICATION_ID = 555;
+    private static final String CHANNEL_ID = "ServiceChannel";
 
 
     PlayerNotificationManager(MusicPlayerService service) {
 
         this.service = service;
-        this.resources = service.getResources();
-        this.appName = String.valueOf(R.string.app_name);
     }
 
-    public PendingIntent createAction(String action, int requestCode) {
+    void startNotify(PlaybackStateCompat build) {
 
-        Intent intent = new Intent(service, MusicPlayerService.class);
-        intent.setAction(action);
-        return PendingIntent.getService(service, requestCode, intent, 0);
-    }
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(service, CHANNEL_ID);
 
-    public void startNotify(String playbackStatus) {
-
-       /* int iccon = R.drawable.exo_icon_pause;
-        PendingIntent playPauseAction = createAction(MusicPlayerService.ACTION_PAUSE, REQUEST_CODE_PAUSE);
-
-        if (playbackStatus == "paused") {
-
-            iccon = R.drawable.exo_icon_play;
-            playPauseAction = createAction(MusicPlayerService.ACTION_PLAY, REQUEST_CODE_PLAY);
+        int icon;
+        String play_pause;
+        if (build.getState() == PlaybackStateCompat.STATE_PLAYING) {
+            icon = R.drawable.exo_controls_pause;
+            play_pause = service.getString(R.string.pause);
+        } else {
+            icon = R.drawable.exo_controls_play;
+            play_pause = service.getString(R.string.play);
         }
 
-        PendingIntent stopAction = createAction(MusicPlayerService.ACTION_STOP, REQUEST_CODE_STOP);
+        NotificationCompat.Action playPauseAction = new NotificationCompat.Action(
+                icon, play_pause,
+                MediaButtonReceiver.buildMediaButtonPendingIntent(service,
+                        PlaybackStateCompat.ACTION_PLAY_PAUSE));
 
-        Intent intent = new Intent(service, PlayerActivity.class);
-        intent.setAction(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
-        PendingIntent pendingIntent = PendingIntent.getActivity(service, 0, intent, 0);
+        Intent notificationIntent = new Intent(service, PlayerActivity.class);
+        PendingIntent contentPendingIntent = PendingIntent.getActivity
+                (service, 0, notificationIntent, 0);
 
-        NotificationManagerCompat.from(service).cancel(NOTIFICATION_ID);
+        builder
+                .setContentTitle("Music Player")
+                .setContentIntent(contentPendingIntent)
+                .setSmallIcon(R.drawable.ic_music)
+                .addAction(playPauseAction)
+                .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_STOP));
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(service, String.valueOf(NOTIFICATION_ID))
-                .setSmallIcon(R.drawable.exo_edit_mode_logo)
-                .setLargeIcon(BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher))
-                .setContentTitle(appName)
-                .setContentText("test video service")
-                .setContentIntent(pendingIntent)
-                .addAction(iccon, "pause", playPauseAction)
-                .addAction(R.drawable.exo_icon_stop, "stop", stopAction);
-
-        service.startForeground(NOTIFICATION_ID, builder.build());*/
-
+        if (build.getState() == PlaybackStateCompat.STATE_PLAYING)
+            service.startForeground(10, builder.build());
+        else {
+            service.startForeground(10, builder.build());
+            service.stopForeground(false);
+        }
     }
 
     public void cancelNotify() {
