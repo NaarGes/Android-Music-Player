@@ -9,7 +9,7 @@ import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.PlaybackStateCompat;
 
 
-public class PlayerNotificationManager {
+class PlayerNotificationManager {
 
     private MusicPlayerService service;
 
@@ -27,14 +27,11 @@ public class PlayerNotificationManager {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(service, CHANNEL_ID);
 
         int icon;
-        String play_pause;
-        if (build.getState() == PlaybackStateCompat.STATE_PLAYING) {
+        if (build.getState() == PlaybackStateCompat.STATE_PLAYING)
             icon = R.drawable.exo_controls_pause;
-            play_pause = service.getString(R.string.pause);
-        } else {
+        else
             icon = R.drawable.exo_controls_play;
-            play_pause = service.getString(R.string.play);
-        }
+
 
         NotificationCompat.Action playPauseAction = new NotificationCompat.Action(
                 icon, "",
@@ -73,9 +70,4 @@ public class PlayerNotificationManager {
             service.stopForeground(false);
         }
     }
-
-    public void cancelNotify() {
-        service.stopForeground(true);
-    }
-
 }

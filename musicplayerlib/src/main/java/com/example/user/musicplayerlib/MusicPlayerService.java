@@ -3,13 +3,10 @@ package com.example.user.musicplayerlib;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
-import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -21,19 +18,14 @@ import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayerFactory;
-import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,15 +34,14 @@ import java.util.List;
 public class MusicPlayerService extends Service implements Player.EventListener {
 
     private static final String LOG_TAG = MusicPlayerService.class.getSimpleName();
+
     private final IBinder binder = new MyBinder();
     private SimpleExoPlayer exoPlayer;
     private MediaSessionCompat session;
     private PlaybackStateCompat.Builder stateBuilder;
     private AudioAttributes audioAttributes;
     private boolean isBounded;
-    private Uri mediaUri = null;
-
-    private List<Uri> playListUris;
+    private List<Uri> playList;
 
     private PlayerNotificationManager notificationManager;
 
@@ -59,7 +50,7 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         super.onCreate();
 
         // initialize media session
-        playListUris = new ArrayList<>();
+        playList = new ArrayList<>();
         audioAttributes = new AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
                 .setContentType(C.CONTENT_TYPE_MUSIC)
@@ -115,14 +106,10 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         return exoPlayer;
     }
 
-    public Uri getMediaUri() {
-        return mediaUri;
-    }
-
     // one music
     public MediaSource buildMediaSource(Uri musicUri) {
 
-        playListUris.add(musicUri);
+        playList.add(musicUri);
         CacheDataSourceFactory cacheDataSourceFactory = new CacheDataSourceFactory(
                 this,
                 100 * 1024 * 1024,
@@ -140,7 +127,7 @@ public class MusicPlayerService extends Service implements Player.EventListener 
     public MediaSource buildMediaSource(List<Uri> musicUris) {
 
         ConcatenatingMediaSource concatenatingMediaSource = new ConcatenatingMediaSource();
-        playListUris.addAll(musicUris);
+        playList.addAll(musicUris);
         CacheDataSourceFactory cacheDataSourceFactory = new CacheDataSourceFactory(
                 this,
                 100 * 1024 * 1024,
@@ -158,10 +145,6 @@ public class MusicPlayerService extends Service implements Player.EventListener 
 
         return new ExtractorMediaSource.Factory(cacheDataSourceFactory)
                 .createMediaSource(uri);
-    }
-
-    public List<Uri> getPlayListUris() {
-        return playListUris;
     }
 
     private void initializeMediaSession() {
@@ -242,19 +225,9 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         exoPlayer = null;
     }
 
-    @Override
-    public void onTimelineChanged(Timeline timeline, @Nullable Object manifest, int reason) {
-
-    }
-
-    @Override
-    public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
-
-    }
-
-    @Override
-    public void onLoadingChanged(boolean isLoading) {
-
+    // return playlist
+    public List<Uri> getPlayList() {
+        return playList;
     }
 
     @Override
@@ -281,17 +254,7 @@ public class MusicPlayerService extends Service implements Player.EventListener 
 
     @Override
     public void onPlayerError(ExoPlaybackException error) {
-
-    }
-
-    @Override
-    public void onPositionDiscontinuity(int reason) {
-
-    }
-
-    @Override
-    public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
-
+        error.printStackTrace();
     }
 
     /**
