@@ -120,10 +120,6 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         return mediaUri;
     }
 
-    public void setMediaUri(Uri mediaUri) {
-        this.mediaUri = mediaUri;
-    }
-
     // one music
     public MediaSource buildMediaSource(Uri musicUri) {
 
@@ -134,41 +130,35 @@ public class MusicPlayerService extends Service implements Player.EventListener 
                 5 * 1024 * 1024);
 
         if (musicUri.getPathSegments().contains("mp3") || musicUri.getPathSegments().contains("m3u8")) {
-            ExtractorMediaSource mediaSource = new ExtractorMediaSource.Factory(cacheDataSourceFactory)
-                    //new DefaultHttpDataSourceFactory("exoplayer-codelab"))
-                    .createMediaSource(musicUri);
+            ExtractorMediaSource mediaSource = createMediaSource(cacheDataSourceFactory, musicUri);
 
             return new LoopingMediaSource(mediaSource);
         }
         return null;
     }
 
-    // list of musics
+    // looping list of musics
     public MediaSource buildMediaSource(List<Uri> musicUris) {
 
-        String[] songs = new String[2];
-
-        for (int i=0; i<musicUris.size();i++)
-            songs[i] = String.valueOf(musicUris.get(i));
-
-        getPlayList(this, songs);
-
+        ConcatenatingMediaSource concatenatingMediaSource = new ConcatenatingMediaSource();
         playListUris.addAll(musicUris);
         CacheDataSourceFactory cacheDataSourceFactory = new CacheDataSourceFactory(
                 this,
                 100 * 1024 * 1024,
                 5 * 1024 * 1024);
-        //for (int i = 0; i < musics.size(); i++) {
 
-        ExtractorMediaSource music1 =
-                new ExtractorMediaSource.Factory(cacheDataSourceFactory)
-                        .createMediaSource(musicUris.get(0));
+        for (int i=0; i<musicUris.size();i++) {
+            concatenatingMediaSource.addMediaSource(
+                    createMediaSource(cacheDataSourceFactory, musicUris.get(i)));
+        }
 
-        ExtractorMediaSource music2 =
-                new ExtractorMediaSource.Factory(cacheDataSourceFactory)
-                        .createMediaSource(musicUris.get(1));
+        return concatenatingMediaSource;
+    }
 
-        return new LoopingMediaSource(new ConcatenatingMediaSource(music1, music2));
+    private ExtractorMediaSource createMediaSource(CacheDataSourceFactory cacheDataSourceFactory, Uri uri) {
+
+        return new ExtractorMediaSource.Factory(cacheDataSourceFactory)
+                .createMediaSource(uri);
     }
 
     public List<Uri> getPlayListUris() {
@@ -178,9 +168,11 @@ public class MusicPlayerService extends Service implements Player.EventListener 
     private void initializeMediaSession() {
 
         // Create a MediaSessionCompat.
-        ComponentName mediaButtonReceiver = new ComponentName(getApplicationContext(), MediaButtonReceiver.class);
+        ComponentName mediaButtonReceiver = new ComponentName(getApplicationContext(),
+                MediaButtonReceiver.class);
 
-        session = new MediaSessionCompat(this, getClass().getSimpleName(), mediaButtonReceiver, null);
+        session = new MediaSessionCompat(this, getClass().getSimpleName(),
+                mediaButtonReceiver, null);
 
         // Enable callbacks from MediaButtons and TransportControls.
         session.setFlags(
@@ -190,7 +182,8 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         // Do not let MediaButtons restart the player when the app is not visible.
         Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
         mediaButtonIntent.setClass(this, MediaButtonReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, mediaButtonIntent, 0);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0,
+                mediaButtonIntent, 0);
         session.setMediaButtonReceiver(pendingIntent);
 
         // Set an initial PlaybackState with ACTION_PLAY, so media buttons can start the player.
@@ -368,59 +361,4 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         session.setPlaybackState(playbackstateBuilder.build());
     }*/
 
-    // fixme illegal exception
-    public ArrayList<Song> getPlayList(Context context, String[] uris) {
-
-        ArrayList<Song> songList = new ArrayList<>();
-            String sortOrder = null;
-            try {
-                String[] proj = {MediaStore.Audio.Media._ID,
-                        MediaStore.Audio.Media.TITLE,
-                        MediaStore.Audio.Media.ARTIST,
-                        MediaStore.Audio.Media.DURATION,
-                        MediaStore.Audio.Media.DATA,
-                        MediaStore.Audio.Media.ALBUM,
-                        MediaStore.Audio.Media.ALBUM_ID
-                };
-
-                String selection = null;
-
-                String[] selectionArgs = uris;
-
-
-                Cursor audioCursor = context.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                        proj, selection, selectionArgs, sortOrder);
-
-                if (audioCursor != null) {
-                    if (audioCursor.moveToFirst()) {
-                        do {
-                            int audioTitle = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
-                            int audioartist = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
-                            int audioduration = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
-                            int audiodata = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
-                            int audioalbum = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
-                            int audioalbumid = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
-                            int song_id = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
-
-
-                            Song song = new Song();
-                            song.setUri(audioCursor.getString(audiodata));
-                            song.setTitle(audioCursor.getString(audioTitle));
-                            song.setDuration((audioCursor.getString(audioduration)));
-                            song.setArtist(audioCursor.getString(audioartist));
-                            song.setAlbum(audioCursor.getString(audioalbum));
-                            song.setId(audioCursor.getLong(song_id));
-                            //song.setAlbumArt((ContentUris.withAppendedId(albumArtUri, audioCursor.getLong(audioalbumid))).toString());
-                            Log.e(TAG, "getPlayList: "+song.getUri() + " "+song.getTitle()+" "+ song.getArtist());
-                            songList.add(song);
-                        } while (audioCursor.moveToNext());
-                    }
-                }
-                assert audioCursor != null;
-                audioCursor.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        return songList;
-    }
 }
