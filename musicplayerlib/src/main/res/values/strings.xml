@@ -3,10 +3,6 @@
     <string name="girls_like_u_mp3">http://dl.mp3lyric.com/Musics/C/CARDI-B/Girls%20Like%20You%20-%20MAROON%205%20ft%20CARDI%20B.mp3</string>
     <string name="nem_mp3">https://www.tarafdari.com/sites/default/files/contents/user6984/content-sound/07.metallica_-_nothing_else_matters_0.mp3</string>
     <string name="my_immortal">https://www.tarafdari.com/sites/default/files/contents/user6984/content-sound/02_-_my_immortal_album_version.mp3</string>
-
-    <string name="pause">pause</string>
-    <string name="play">play</string>
-    <string name="restart">restart</string>
-    <string name="next">next</string>
-    <string name="previous">previous</string>
+    <string name="believer">http://e.toptunes.ir/mp3/4/imagine-dragons-believer.mp3</string>
+    <string name="in_the_end">http://dl.new-song.ir/music/96/4/Linkin%20Park%20The%20End_(www.new-song.ir).mp3</string>
 </resources>

@@ -37,13 +37,13 @@ public class MusicPlayerService extends Service implements Player.EventListener 
 
     private final IBinder binder = new MyBinder();
     private SimpleExoPlayer exoPlayer;
-    private MediaSessionCompat session;
     private PlaybackStateCompat.Builder stateBuilder;
     private AudioAttributes audioAttributes;
     private boolean isBounded;
     private List<Uri> playList;
 
     private PlayerNotificationManager notificationManager;
+    private MediaSessionCompat session;
 
     @Override
     public void onCreate() {
@@ -195,24 +195,14 @@ public class MusicPlayerService extends Service implements Player.EventListener 
                     new DefaultTrackSelector(),
                     new DefaultLoadControl()
             );
-            // handling audio focus todo need to test
+            // handling audio focus
             exoPlayer.setAudioAttributes(audioAttributes, true);
 
-           // exoPlayer.seekTo(currentWindow, playBackPosition);
-
+            // add event listener
             exoPlayer.addListener(this);
 
-            Uri uri1 = Uri.parse(getApplicationContext().getString(R.string.girls_like_u_mp3));
-            Uri uri2 = Uri.parse(getApplicationContext().getString(R.string.nem_mp3));
-            Uri uri3 = Uri.parse(getString(R.string.my_immortal));
-
-            List<Uri> uris = new ArrayList<>();
-            uris.add(uri1);
-            uris.add(uri2);
-            uris.add(uri3);
-
-            //MediaSource mediaSource = buildMediaSource(uri2);
-            MediaSource mediaSource = buildMediaSource(uris);
+            //MediaSource mediaSource = buildMediaSource(uri);
+            MediaSource mediaSource = buildMediaSource(generatePlayList());
             exoPlayer.prepare(mediaSource, true, false);
             exoPlayer.setPlayWhenReady(true);
         }
@@ -228,6 +218,24 @@ public class MusicPlayerService extends Service implements Player.EventListener 
     // return playlist
     public List<Uri> getPlayList() {
         return playList;
+    }
+
+    // generate and return list of music uris
+    public List<Uri> generatePlayList() {
+        Uri uri1 = Uri.parse(getString(R.string.girls_like_u_mp3));
+        Uri uri2 = Uri.parse(getString(R.string.nem_mp3));
+        Uri uri3 = Uri.parse(getString(R.string.my_immortal));
+        Uri uri4 = Uri.parse(getString(R.string.believer));
+        Uri uri5 = Uri.parse(getString(R.string.in_the_end));
+
+        List<Uri> uris = new ArrayList<>();
+        uris.add(uri1);
+        uris.add(uri2);
+        uris.add(uri3);
+        uris.add(uri4);
+        uris.add(uri5);
+
+        return uris;
     }
 
     @Override
