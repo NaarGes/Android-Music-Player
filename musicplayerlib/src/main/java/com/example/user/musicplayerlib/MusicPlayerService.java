@@ -38,7 +38,6 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import java.util.ArrayList;
 import java.util.List;
 
-import static android.support.constraint.Constraints.TAG;
 
 public class MusicPlayerService extends Service implements Player.EventListener {
 
@@ -219,13 +218,15 @@ public class MusicPlayerService extends Service implements Player.EventListener 
            // exoPlayer.seekTo(currentWindow, playBackPosition);
 
             exoPlayer.addListener(this);
-            // todo use for instead
+
             Uri uri1 = Uri.parse(getApplicationContext().getString(R.string.girls_like_u_mp3));
             Uri uri2 = Uri.parse(getApplicationContext().getString(R.string.nem_mp3));
+            Uri uri3 = Uri.parse(getString(R.string.my_immortal));
 
             List<Uri> uris = new ArrayList<>();
             uris.add(uri1);
             uris.add(uri2);
+            uris.add(uri3);
 
             //MediaSource mediaSource = buildMediaSource(uri2);
             MediaSource mediaSource = buildMediaSource(uris);
@@ -279,11 +280,6 @@ public class MusicPlayerService extends Service implements Player.EventListener 
 
 
     @Override
-    public void onRepeatModeChanged(int repeatMode) {
-
-    }
-
-    @Override
     public void onPlayerError(ExoPlaybackException error) {
 
     }
@@ -328,37 +324,15 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         public void onSkipToNext() {
             super.onSkipToNext();
             // todo skip to next track
-            //setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_NEXT);
             Log.i(LOG_TAG, "MySessionCallback skip to next");
         }
 
         @Override
         public void onSkipToPrevious() {
 
-            exoPlayer.seekTo(0);
+            super.onSkipToPrevious();
             // todo skip to previous track
-            //setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
             Log.i(LOG_TAG, "MySessionCallback skip to next");
         }
     }
-
-    /*private void setMediaPlaybackState(int state) {
-        PlaybackStateCompat.Builder playbackstateBuilder = new PlaybackStateCompat.Builder();
-        switch (state) {
-            case PlaybackStateCompat.STATE_PLAYING: {
-                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PAUSE
-                        | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
-                break;
-            }
-            default: {
-                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PLAY
-                        | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
-                break;
-            }
-        }
-
-        playbackstateBuilder.setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 0);
-        session.setPlaybackState(playbackstateBuilder.build());
-    }*/
-
 }
