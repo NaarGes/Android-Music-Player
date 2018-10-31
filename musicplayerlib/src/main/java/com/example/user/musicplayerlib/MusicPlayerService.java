@@ -2,8 +2,12 @@ package com.example.user.musicplayerlib;
 
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
@@ -31,7 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class MusicPlayerService extends Service implements Player.EventListener {
+public class MusicPlayerService extends Service implements Player.EventListener,
+        AudioManager.OnAudioFocusChangeListener {
 
     private static final String LOG_TAG = MusicPlayerService.class.getSimpleName();
 
@@ -44,21 +49,34 @@ public class MusicPlayerService extends Service implements Player.EventListener 
 
     private PlayerNotificationManager notificationManager;
     private MediaSessionCompat session;
+    private BroadcastReceiver noisyReceiver;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        // initialize media session
         playList = new ArrayList<>();
+
         audioAttributes = new AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
                 .setContentType(C.CONTENT_TYPE_MUSIC)
                 .build();
+
+        noisyReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if( exoPlayer != null && exoPlayer.getPlayWhenReady() ) {
+                    exoPlayer.setPlayWhenReady(false);
+                }
+            }
+        };
+
         initializeMediaSession();
         initializePlayer();
+        initNoisyReceiver();
     }
 
+    // This method will take the Intent that is passed to the Service and send it to the MediaButtonReceiver class.
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
@@ -92,8 +110,18 @@ public class MusicPlayerService extends Service implements Player.EventListener 
     public void onDestroy() {
         super.onDestroy();
         Log.i(LOG_TAG, "onDestroy");
+        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.abandonAudioFocus(this);
+        unregisterReceiver(noisyReceiver);
+        notificationManager.cancelNotify();
+//        NotificationManagerCompat.from(this).cancel(1);
         releasePlayer();
         session.setActive(false);
+    }
+
+    @Override
+    public void onAudioFocusChange(int focusChange) {
+
     }
 
     public class MyBinder extends Binder {
@@ -208,6 +236,13 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         }
     }
 
+    //Handles headphones coming unplugged. cannot be done through a manifest receiver
+    private void initNoisyReceiver() {
+
+        IntentFilter filter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+        registerReceiver(noisyReceiver, filter);
+    }
+
     private void releasePlayer() {
         stopForeground(true);
         exoPlayer.stop();
@@ -259,28 +294,33 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         notificationManager.startNotify(stateBuilder.build());
     }
 
-
     @Override
     public void onPlayerError(ExoPlaybackException error) {
         error.printStackTrace();
+        exoPlayer.stop();
     }
 
     /**
      * Media Session Callbacks, where all external clients control the player.
      */
     private class MySessionCallback extends MediaSessionCompat.Callback {
+
         @Override
         public void onPlay() {
             Log.i(LOG_TAG, "MySessionCallback Play");
             if (exoPlayer.getPlaybackState() == Player.STATE_ENDED)
                 exoPlayer.seekTo(0);
             exoPlayer.setPlayWhenReady(true);
+
+            session.setActive(true);
+            setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
         }
 
         @Override
         public void onPause() {
             Log.i(LOG_TAG, "MySessionCallback Pause");
             exoPlayer.setPlayWhenReady(false);
+            setMediaPlaybackState(PlaybackStateCompat.STATE_PAUSED);
         }
 
         @Override
@@ -295,6 +335,8 @@ public class MusicPlayerService extends Service implements Player.EventListener 
         public void onSkipToNext() {
             super.onSkipToNext();
             // todo skip to next track
+            exoPlayer.seekTo(exoPlayer.getNextWindowIndex());
+            //controller.getTransportControls().skipToNext();
             Log.i(LOG_TAG, "MySessionCallback skip to next");
         }
 
@@ -303,7 +345,21 @@ public class MusicPlayerService extends Service implements Player.EventListener 
 
             super.onSkipToPrevious();
             // todo skip to previous track
+            exoPlayer.seekTo(exoPlayer.getPreviousWindowIndex());
+            //controller.getTransportControls().skipToPrevious();
             Log.i(LOG_TAG, "MySessionCallback skip to next");
         }
+    }
+
+    private void setMediaPlaybackState(int state) {
+        PlaybackStateCompat.Builder playbackstateBuilder = new PlaybackStateCompat.Builder();
+
+        if( state == PlaybackStateCompat.STATE_PLAYING ) {
+            playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PAUSE);
+        } else {
+            playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PLAY);
+        }
+        playbackstateBuilder.setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 0);
+        session.setPlaybackState(playbackstateBuilder.build());
     }
 }

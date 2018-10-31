@@ -57,7 +57,6 @@ class PlayerNotificationManager {
                 .setContentIntent(contentPendingIntent)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setSmallIcon(R.drawable.ic_music)
-                .setColor(R.color.white)
                 .addAction(prevAction)
                 .addAction(playPauseAction)
                 .addAction(nextAction)
@@ -69,5 +68,8 @@ class PlayerNotificationManager {
             service.startForeground(10, builder.build());
             service.stopForeground(false);
         }
+    }
+
+    void cancelNotify() {
     }
 }
