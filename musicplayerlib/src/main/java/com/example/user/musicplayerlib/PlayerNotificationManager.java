@@ -53,6 +53,10 @@ class PlayerNotificationManager {
                 (service, 0, notificationIntent, 0);
 
         builder
+                .setStyle(new android.support.v4.media.app.NotificationCompat.MediaStyle()
+                        .setShowActionsInCompactView(0, 1, 2)
+                        .setShowCancelButton(true)
+                        .setMediaSession(service.getSession().getSessionToken()))
                 .setContentTitle("Music Player")
                 .setContentIntent(contentPendingIntent)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)

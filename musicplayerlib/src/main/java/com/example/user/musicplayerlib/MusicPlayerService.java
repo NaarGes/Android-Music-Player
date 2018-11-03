@@ -266,6 +266,10 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         return playList;
     }
 
+    public MediaSessionCompat getSession() {
+        return session;
+    }
+
     // generate and return list of music uris
     public List<Uri> generateplayListUri() {
         Uri uri1 = Uri.parse(getString(R.string.girls_like_u_mp3));
@@ -282,9 +286,10 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         uris.add(uri5);
 
         // add music details in playlist
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+
         for (int i = 0; i < uris.size(); i++) {
 
-            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
             retriever.setDataSource(String.valueOf(uris.get(i)), new HashMap<>());
 
             Song song = new Song();
@@ -292,7 +297,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
             song.setTitle(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE));
             song.setArtist(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST));
             song.setAlbum(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM));
-            song.setAlbumArt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST));
+            song.setAlbumArt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_IMAGE_PRIMARY));
             song.setDuration(Util.musicDuration(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)));
             song.setGenre(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE));
 
