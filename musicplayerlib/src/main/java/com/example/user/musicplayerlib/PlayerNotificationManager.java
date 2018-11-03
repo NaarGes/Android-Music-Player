@@ -57,6 +57,7 @@ class PlayerNotificationManager {
                         .setShowActionsInCompactView(0, 1, 2)
                         .setShowCancelButton(true)
                         .setMediaSession(service.getSession().getSessionToken()))
+                .setColorized(true)
                 .setContentTitle("Music Player")
                 .setContentIntent(contentPendingIntent)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)

@@ -292,6 +292,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
 
             retriever.setDataSource(String.valueOf(uris.get(i)), new HashMap<>());
 
+            // FIXME run in another thread
             Song song = new Song();
             song.setUri(uris.get(i));
             song.setTitle(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE));
