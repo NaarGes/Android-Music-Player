@@ -1,19 +1,31 @@
 package com.example.user.musicplayerlib;
 
+import android.net.Uri;
+
 public class Song {
-    private String uri;
+
+    private long id;
+    private Uri uri;
     private String title;
     private String duration;
     private String artist;
     private String album;
-    private long id;
+    private String genre;
     private String AlbumArt;
 
-    public void setUri(String uri) {
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    void setUri(Uri uri) {
         this.uri = uri;
     }
 
-    public String getUri() {
+    Uri getUri() {
         return uri;
     }
 
@@ -25,43 +37,43 @@ public class Song {
         return title;
     }
 
-    public void setDuration(String duration) {
+    void setDuration(String duration) {
         this.duration = duration;
     }
 
-    public String getDuration() {
+    String getDuration() {
         return duration;
     }
 
-    public void setArtist(String artist) {
+    void setArtist(String artist) {
         this.artist = artist;
     }
 
-    public String getArtist() {
+    String getArtist() {
         return artist;
     }
 
-    public void setAlbum(String album) {
+    void setAlbum(String album) {
         this.album = album;
     }
 
-    public String getAlbum() {
+    String getAlbum() {
         return album;
     }
 
-    public void setId(long id) {
-        this.id = id;
+    void setGenre(String genre) {
+        this.genre = genre;
     }
 
-    public long getId() {
-        return id;
+    String getGenre() {
+        return genre;
     }
 
-    public void setAlbumArt(String albumArt) {
+    void setAlbumArt(String albumArt) {
         AlbumArt = albumArt;
     }
 
-    public String getAlbumArt() {
+    String getAlbumArt() {
         return AlbumArt;
     }
 }

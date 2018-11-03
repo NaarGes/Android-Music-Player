@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
@@ -32,7 +33,10 @@ import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+
+import static com.google.android.exoplayer2.ExoPlayerLibraryInfo.TAG;
 
 
 public class MusicPlayerService extends Service implements Player.EventListener,
@@ -45,7 +49,9 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     private PlaybackStateCompat.Builder stateBuilder;
     private AudioAttributes audioAttributes;
     private boolean isBounded;
-    private List<Uri> playList;
+
+    private List<Uri> playListUri;
+    private List<Song> playList;
 
     private PlayerNotificationManager notificationManager;
     private MediaSessionCompat session;
@@ -55,6 +61,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     public void onCreate() {
         super.onCreate();
 
+        playListUri = new ArrayList<>();
         playList = new ArrayList<>();
 
         audioAttributes = new AudioAttributes.Builder()
@@ -137,7 +144,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     // one music
     public MediaSource buildMediaSource(Uri musicUri) {
 
-        playList.add(musicUri);
+        playListUri.add(musicUri);
         CacheDataSourceFactory cacheDataSourceFactory = new CacheDataSourceFactory(
                 this,
                 100 * 1024 * 1024,
@@ -155,7 +162,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     public MediaSource buildMediaSource(List<Uri> musicUris) {
 
         ConcatenatingMediaSource concatenatingMediaSource = new ConcatenatingMediaSource();
-        playList.addAll(musicUris);
+        playListUri.addAll(musicUris);
         CacheDataSourceFactory cacheDataSourceFactory = new CacheDataSourceFactory(
                 this,
                 100 * 1024 * 1024,
@@ -230,7 +237,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
             exoPlayer.addListener(this);
 
             //MediaSource mediaSource = buildMediaSource(uri);
-            MediaSource mediaSource = buildMediaSource(generatePlayList());
+            MediaSource mediaSource = buildMediaSource(generateplayListUri());
             exoPlayer.prepare(mediaSource, true, false);
             exoPlayer.setPlayWhenReady(true);
         }
@@ -250,13 +257,17 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         exoPlayer = null;
     }
 
-    // return playlist
-    public List<Uri> getPlayList() {
+    // return playListUri
+    public List<Uri> getplayListUri() {
+        return playListUri;
+    }
+
+    public List<Song> getPlayList() {
         return playList;
     }
 
     // generate and return list of music uris
-    public List<Uri> generatePlayList() {
+    public List<Uri> generateplayListUri() {
         Uri uri1 = Uri.parse(getString(R.string.girls_like_u_mp3));
         Uri uri2 = Uri.parse(getString(R.string.nem_mp3));
         Uri uri3 = Uri.parse(getString(R.string.my_immortal));
@@ -270,6 +281,31 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         uris.add(uri4);
         uris.add(uri5);
 
+        // add music details in playlist
+        for (int i = 0; i < uris.size(); i++) {
+
+            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+            retriever.setDataSource(String.valueOf(uris.get(i)), new HashMap<>());
+
+            Song song = new Song();
+            song.setUri(uris.get(i));
+            song.setTitle(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE));
+            song.setArtist(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST));
+            song.setAlbum(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM));
+            song.setAlbumArt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST));
+            song.setDuration(Util.musicDuration(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)));
+            song.setGenre(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE));
+
+            playList.add(song);
+
+            Log.e(TAG, "generateplayListUri: uri: "+playList.get(i).getUri());
+            Log.e(TAG, "generateplayListUri: title: "+playList.get(i).getTitle());
+            Log.e(TAG, "generateplayListUri: artist: "+playList.get(i).getArtist());
+            Log.e(TAG, "generateplayListUri: album: "+playList.get(i).getAlbum());
+            Log.e(TAG, "generateplayListUri: album art: "+playList.get(i).getAlbumArt());
+            Log.e(TAG, "generateplayListUri: duration: "+playList.get(i).getDuration());
+            Log.e(TAG, "generateplayListUri: genre: "+playList.get(i).getGenre());
+        }
         return uris;
     }
 
