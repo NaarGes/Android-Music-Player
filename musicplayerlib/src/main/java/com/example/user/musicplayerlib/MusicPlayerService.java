@@ -16,6 +16,7 @@ import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
+import android.view.KeyEvent;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
@@ -65,6 +66,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
 
         playListUri = new ArrayList<>();
         currentWindow = new Timeline.Window();
+        notificationManager = new PlayerNotificationManager(this);
 
         audioAttributes = new AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
@@ -220,7 +222,6 @@ public class MusicPlayerService extends Service implements Player.EventListener,
 
         // Start the Media Session since the activity is active.
         session.setActive(true);
-
     }
 
     private void initializePlayer() {
@@ -286,11 +287,10 @@ public class MusicPlayerService extends Service implements Player.EventListener,
 
         return uris;
     }
-
+//playListUri.get(exoPlayer.getCurrentPeriodIndex())
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
 
-        notificationManager = new PlayerNotificationManager(this);
         if ((playbackState == Player.STATE_READY) && playWhenReady) {
             Log.i(LOG_TAG, "onPlayerStateChanged palying");
 
@@ -304,12 +304,14 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         } else if (playbackState == Player.STATE_ENDED) {
             stateBuilder.setState(PlaybackStateCompat.STATE_STOPPED, exoPlayer.getCurrentPosition(), 1f);
         }
+
         session.setPlaybackState(stateBuilder.build());
 
         Log.e(TAG, "onPlayerStateChanged: current period index "+exoPlayer.getCurrentPeriodIndex() );
         Log.e(TAG, "onPlayerStateChanged: current window index "+exoPlayer.getCurrentWindowIndex() );
 
-        notificationManager.startNotify(stateBuilder.build(), playListUri.get(exoPlayer.getCurrentPeriodIndex()));
+        //notificationManager.updateNotification(playListUri.get(exoPlayer.getCurrentPeriodIndex()));
+        notificationManager.startNotify(stateBuilder.build());
     }
 
     @Override
@@ -359,6 +361,21 @@ public class MusicPlayerService extends Service implements Player.EventListener,
             super.onSkipToPrevious();
             previous();
             Log.i(LOG_TAG, "MySessionCallback skip to next");
+        }
+
+        // handle volume changes using headphone, not working apple headphone
+        @Override
+        public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
+
+            KeyEvent keyEvent = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+            if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP) {
+                exoPlayer.setVolume(exoPlayer.getVolume() + 1);
+                return true;
+            } else if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN){
+                exoPlayer.setVolume(exoPlayer.getVolume() - 1);
+                return true;
+            } else
+                return super.onMediaButtonEvent(mediaButtonEvent);
         }
     }
 
