@@ -2,6 +2,8 @@ package com.example.user.musicplayerlib;
 
 class Util {
 
+    public static final String CHANNEL_ID = "ServiceChannel";
+
     static String musicDuration(String timeLong) {
 
         long timeInMilliSec = Long.parseLong(timeLong);

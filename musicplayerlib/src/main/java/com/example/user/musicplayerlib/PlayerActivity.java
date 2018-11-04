@@ -50,7 +50,7 @@ public class PlayerActivity extends AppCompatActivity implements ServiceConnecti
         MusicPlayerService.MyBinder binder = (MusicPlayerService.MyBinder) service;
         musicPlayerService = binder.getService();
         playerView.setPlayer(musicPlayerService.getExoPlayer());
-        if (musicPlayerService.getPlayList() == null) {
+        if (musicPlayerService.getPlayListUri() == null) {
             musicPlayerService.buildMediaSource(Uri.parse(String.valueOf(R.string.girls_like_u_mp3)));
         }
         bound = true;

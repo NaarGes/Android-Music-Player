@@ -4,17 +4,20 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.media.MediaMetadataRetriever;
+import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.PlaybackStateCompat;
+
+import java.util.HashMap;
+
+import static com.example.user.musicplayerlib.Util.CHANNEL_ID;
 
 
 class PlayerNotificationManager {
 
     private MusicPlayerService service;
-
-    private static final String CHANNEL_ID = "ServiceChannel";
-
 
     PlayerNotificationManager(MusicPlayerService service) {
 
@@ -22,8 +25,21 @@ class PlayerNotificationManager {
     }
 
     @SuppressLint("ResourceAsColor")
-    void startNotify(PlaybackStateCompat build) {
+    void startNotify(PlaybackStateCompat build, Uri musicUri) {
 
+        /*MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(String.valueOf(musicUri), new HashMap<>());
+
+        // FIXME run in another thread
+        Song song = new Song();
+        song.setUri(musicUri);
+        song.setTitle(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE));
+        song.setArtist(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST));
+        song.setAlbum(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM));
+        song.setAlbumArt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_IMAGE_PRIMARY));
+        song.setDuration(Util.musicDuration(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)));
+        song.setGenre(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE));
+*/
         NotificationCompat.Builder builder = new NotificationCompat.Builder(service, CHANNEL_ID);
 
         int icon;

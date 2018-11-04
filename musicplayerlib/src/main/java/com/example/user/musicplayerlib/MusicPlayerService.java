@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
-import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
@@ -25,6 +24,7 @@ import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
@@ -32,8 +32,8 @@ import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 
+
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import static com.google.android.exoplayer2.ExoPlayerLibraryInfo.TAG;
@@ -51,18 +51,20 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     private boolean isBounded;
 
     private List<Uri> playListUri;
-    private List<Song> playList;
 
     private PlayerNotificationManager notificationManager;
     private MediaSessionCompat session;
     private BroadcastReceiver noisyReceiver;
+
+    private Timeline.Window currentWindow;
+    private static final long MAX_POSITION_FOR_SEEK_TO_PREVIOUS = 3000;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
         playListUri = new ArrayList<>();
-        playList = new ArrayList<>();
+        currentWindow = new Timeline.Window();
 
         audioAttributes = new AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
@@ -161,8 +163,8 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     // looping list of musics
     public MediaSource buildMediaSource(List<Uri> musicUris) {
 
-        ConcatenatingMediaSource concatenatingMediaSource = new ConcatenatingMediaSource();
         playListUri.addAll(musicUris);
+        ConcatenatingMediaSource concatenatingMediaSource = new ConcatenatingMediaSource();
         CacheDataSourceFactory cacheDataSourceFactory = new CacheDataSourceFactory(
                 this,
                 100 * 1024 * 1024,
@@ -237,9 +239,10 @@ public class MusicPlayerService extends Service implements Player.EventListener,
             exoPlayer.addListener(this);
 
             //MediaSource mediaSource = buildMediaSource(uri);
-            MediaSource mediaSource = buildMediaSource(generateplayListUri());
+            MediaSource mediaSource = buildMediaSource(generatePlayListUri());
             exoPlayer.prepare(mediaSource, true, false);
             exoPlayer.setPlayWhenReady(true);
+            exoPlayer.setRepeatMode(Player.REPEAT_MODE_ALL);
         }
     }
 
@@ -258,12 +261,8 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     }
 
     // return playListUri
-    public List<Uri> getplayListUri() {
+    public List<Uri> getPlayListUri() {
         return playListUri;
-    }
-
-    public List<Song> getPlayList() {
-        return playList;
     }
 
     public MediaSessionCompat getSession() {
@@ -271,7 +270,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     }
 
     // generate and return list of music uris
-    public List<Uri> generateplayListUri() {
+    public List<Uri> generatePlayListUri() {
         Uri uri1 = Uri.parse(getString(R.string.girls_like_u_mp3));
         Uri uri2 = Uri.parse(getString(R.string.nem_mp3));
         Uri uri3 = Uri.parse(getString(R.string.my_immortal));
@@ -285,33 +284,6 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         uris.add(uri4);
         uris.add(uri5);
 
-        // add music details in playlist
-        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-
-        for (int i = 0; i < uris.size(); i++) {
-
-            retriever.setDataSource(String.valueOf(uris.get(i)), new HashMap<>());
-
-            // FIXME run in another thread
-            Song song = new Song();
-            song.setUri(uris.get(i));
-            song.setTitle(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE));
-            song.setArtist(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST));
-            song.setAlbum(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM));
-            song.setAlbumArt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_IMAGE_PRIMARY));
-            song.setDuration(Util.musicDuration(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)));
-            song.setGenre(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE));
-
-            playList.add(song);
-
-            Log.e(TAG, "generateplayListUri: uri: "+playList.get(i).getUri());
-            Log.e(TAG, "generateplayListUri: title: "+playList.get(i).getTitle());
-            Log.e(TAG, "generateplayListUri: artist: "+playList.get(i).getArtist());
-            Log.e(TAG, "generateplayListUri: album: "+playList.get(i).getAlbum());
-            Log.e(TAG, "generateplayListUri: album art: "+playList.get(i).getAlbumArt());
-            Log.e(TAG, "generateplayListUri: duration: "+playList.get(i).getDuration());
-            Log.e(TAG, "generateplayListUri: genre: "+playList.get(i).getGenre());
-        }
         return uris;
     }
 
@@ -333,7 +305,11 @@ public class MusicPlayerService extends Service implements Player.EventListener,
             stateBuilder.setState(PlaybackStateCompat.STATE_STOPPED, exoPlayer.getCurrentPosition(), 1f);
         }
         session.setPlaybackState(stateBuilder.build());
-        notificationManager.startNotify(stateBuilder.build());
+
+        Log.e(TAG, "onPlayerStateChanged: current period index "+exoPlayer.getCurrentPeriodIndex() );
+        Log.e(TAG, "onPlayerStateChanged: current window index "+exoPlayer.getCurrentWindowIndex() );
+
+        notificationManager.startNotify(stateBuilder.build(), playListUri.get(exoPlayer.getCurrentPeriodIndex()));
     }
 
     @Override
@@ -353,16 +329,13 @@ public class MusicPlayerService extends Service implements Player.EventListener,
             if (exoPlayer.getPlaybackState() == Player.STATE_ENDED)
                 exoPlayer.seekTo(0);
             exoPlayer.setPlayWhenReady(true);
-
             session.setActive(true);
-            setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
         }
 
         @Override
         public void onPause() {
             Log.i(LOG_TAG, "MySessionCallback Pause");
             exoPlayer.setPlayWhenReady(false);
-            setMediaPlaybackState(PlaybackStateCompat.STATE_PAUSED);
         }
 
         @Override
@@ -376,9 +349,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         @Override
         public void onSkipToNext() {
             super.onSkipToNext();
-            // todo skip to next track
-            exoPlayer.seekTo(exoPlayer.getNextWindowIndex());
-            //controller.getTransportControls().skipToNext();
+            next();
             Log.i(LOG_TAG, "MySessionCallback skip to next");
         }
 
@@ -386,22 +357,52 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         public void onSkipToPrevious() {
 
             super.onSkipToPrevious();
-            // todo skip to previous track
-            exoPlayer.seekTo(exoPlayer.getPreviousWindowIndex());
-            //controller.getTransportControls().skipToPrevious();
+            previous();
             Log.i(LOG_TAG, "MySessionCallback skip to next");
         }
     }
 
-    private void setMediaPlaybackState(int state) {
-        PlaybackStateCompat.Builder playbackstateBuilder = new PlaybackStateCompat.Builder();
+    private void previous() {
 
-        if( state == PlaybackStateCompat.STATE_PLAYING ) {
-            playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PAUSE);
+        Timeline currentTimeline = exoPlayer.getCurrentTimeline();
+        int currentWindowIndex = exoPlayer.getCurrentWindowIndex();
+
+        if (currentTimeline.isEmpty())
+            return;
+
+        if (exoPlayer.getRepeatMode() == Player.REPEAT_MODE_ONE)
+            exoPlayer.seekTo(0);
+        else if (exoPlayer.getRepeatMode() == Player.REPEAT_MODE_ALL) {
+            if (currentWindowIndex == 0)
+                exoPlayer.seekTo(playListUri.size() - 1, C.TIME_UNSET);
+            else
+                exoPlayer.seekTo((currentWindowIndex - 1) % playListUri.size(), C.TIME_UNSET);
         } else {
-            playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PLAY);
+            if (currentWindowIndex > 0 && (exoPlayer.getCurrentPosition() <= MAX_POSITION_FOR_SEEK_TO_PREVIOUS
+                    || (currentWindow.isDynamic && !currentWindow.isSeekable)))
+                exoPlayer.seekTo(currentWindowIndex - 1, C.TIME_UNSET);
+            else
+                exoPlayer.seekTo(0);
         }
-        playbackstateBuilder.setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 0);
-        session.setPlaybackState(playbackstateBuilder.build());
+    }
+
+    private void next() {
+
+        Timeline currentTimeline = exoPlayer.getCurrentTimeline();
+        int currentWindowIndex = exoPlayer.getCurrentWindowIndex();
+
+        if (currentTimeline.isEmpty())
+            return;
+
+        if (exoPlayer.getRepeatMode() == Player.REPEAT_MODE_ONE)
+            exoPlayer.seekTo(0);
+        else if (exoPlayer.getRepeatMode() == Player.REPEAT_MODE_ALL)
+            exoPlayer.seekTo((currentWindowIndex + 1) % playListUri.size(), C.TIME_UNSET);
+        else {// Player.REPEAT_MODE_OFF
+            if (currentWindowIndex < currentTimeline.getWindowCount() - 1)
+                exoPlayer.seekTo(currentWindowIndex + 1, C.TIME_UNSET);
+            else if (currentTimeline.getWindow(currentWindowIndex, currentWindow, false).isDynamic)
+                exoPlayer.seekTo(currentWindowIndex, C.TIME_UNSET);
+        }
     }
 }
