@@ -32,7 +32,9 @@ import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 
 
 import java.util.ArrayList;
@@ -88,7 +90,22 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         initializeMediaSession();
         initializePlayer();
         initNoisyReceiver();
-        //notificationManager.updateNotification(playListUri.get(exoPlayer.getCurrentPeriodIndex()));
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.i(LOG_TAG, "onDestroy");
+
+        // save current playing music and position in shared preferences and use in on create
+        savePlayingState();
+
+        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.abandonAudioFocus(this);
+        unregisterReceiver(noisyReceiver);
+        notificationManager.cancelNotify();
+        releasePlayer();
+        session.setActive(false);
     }
 
     // This method will take the Intent that is passed to the Service and send it to the MediaButtonReceiver class.
@@ -122,23 +139,17 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Log.i(LOG_TAG, "onDestroy");
+    public void onAudioFocusChange(int focusChange) {
 
-        // save current playing music and position in shared preferences and use in on create
-        savePlayingState();
-
-        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        audioManager.abandonAudioFocus(this);
-        unregisterReceiver(noisyReceiver);
-        notificationManager.cancelNotify();
-        releasePlayer();
-        session.setActive(false);
     }
 
+    // FIXME why this method is called twice everytime
     @Override
-    public void onAudioFocusChange(int focusChange) {
+    public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
+
+        Log.e(TAG, "onTracksChanged: " + trackGroups.length + " " + trackGroups);
+        Log.e(TAG, "onTracksChanged: " + trackSelections.length + " " + trackSelections);
+        //notificationManager.updateNotification(playListUri.get(exoPlayer.getCurrentPeriodIndex()));
 
     }
 
@@ -164,7 +175,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         if (musicUri.getPathSegments().contains("mp3") || musicUri.getPathSegments().contains("m3u8")) {
             ExtractorMediaSource mediaSource = createMediaSource(cacheDataSourceFactory, musicUri);
 
-            return new LoopingMediaSource(mediaSource);
+            return mediaSource;
         }
         return null;
     }
