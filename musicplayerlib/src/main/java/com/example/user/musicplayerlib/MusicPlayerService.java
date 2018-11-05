@@ -85,6 +85,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         initializeMediaSession();
         initializePlayer();
         initNoisyReceiver();
+        notificationManager.updateNotification(playListUri.get(exoPlayer.getCurrentPeriodIndex()));
     }
 
     // This method will take the Intent that is passed to the Service and send it to the MediaButtonReceiver class.
@@ -307,10 +308,9 @@ public class MusicPlayerService extends Service implements Player.EventListener,
 
         session.setPlaybackState(stateBuilder.build());
 
-        Log.e(TAG, "onPlayerStateChanged: current period index "+exoPlayer.getCurrentPeriodIndex() );
-        Log.e(TAG, "onPlayerStateChanged: current window index "+exoPlayer.getCurrentWindowIndex() );
+        Log.e(TAG, "onPlayerStateChanged: current period index "+exoPlayer.getCurrentPeriodIndex());
+        Log.e(TAG, "onPlayerStateChanged: current window index "+exoPlayer.getCurrentWindowIndex());
 
-        //notificationManager.updateNotification(playListUri.get(exoPlayer.getCurrentPeriodIndex()));
         notificationManager.startNotify(stateBuilder.build());
     }
 

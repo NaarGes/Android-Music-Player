@@ -1,5 +1,6 @@
 package com.example.user.musicplayerlib;
 
+import android.graphics.Bitmap;
 import android.net.Uri;
 
 public class Song {
@@ -11,7 +12,7 @@ public class Song {
     private String artist;
     private String album;
     private String genre;
-    private String AlbumArt;
+    private Bitmap AlbumArt;
 
     public void setId(long id) {
         this.id = id;
@@ -69,11 +70,11 @@ public class Song {
         return genre;
     }
 
-    void setAlbumArt(String albumArt) {
+    void setAlbumArt(Bitmap albumArt) {
         AlbumArt = albumArt;
     }
 
-    String getAlbumArt() {
+    Bitmap getAlbumArt() {
         return AlbumArt;
     }
 }
