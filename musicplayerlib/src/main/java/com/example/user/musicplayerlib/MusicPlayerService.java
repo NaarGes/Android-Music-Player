@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Binder;
@@ -44,6 +45,8 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         AudioManager.OnAudioFocusChangeListener {
 
     private static final String LOG_TAG = MusicPlayerService.class.getSimpleName();
+    private static final String MUSIC_INDEX = "Current Music Index";
+    private static final String MUSIC_POSITION = "Current Music Position";
 
     private final IBinder binder = new MyBinder();
     private SimpleExoPlayer exoPlayer;
@@ -85,7 +88,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         initializeMediaSession();
         initializePlayer();
         initNoisyReceiver();
-        notificationManager.updateNotification(playListUri.get(exoPlayer.getCurrentPeriodIndex()));
+        //notificationManager.updateNotification(playListUri.get(exoPlayer.getCurrentPeriodIndex()));
     }
 
     // This method will take the Intent that is passed to the Service and send it to the MediaButtonReceiver class.
@@ -122,11 +125,14 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     public void onDestroy() {
         super.onDestroy();
         Log.i(LOG_TAG, "onDestroy");
+
+        // save current playing music and position in shared preferences and use in on create
+        savePlayingState();
+
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         audioManager.abandonAudioFocus(this);
         unregisterReceiver(noisyReceiver);
         notificationManager.cancelNotify();
-//        NotificationManagerCompat.from(this).cancel(1);
         releasePlayer();
         session.setActive(false);
     }
@@ -136,7 +142,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
 
     }
 
-    public class MyBinder extends Binder {
+    class MyBinder extends Binder {
         MusicPlayerService getService() {
             return MusicPlayerService.this;
         }
@@ -245,6 +251,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
             exoPlayer.prepare(mediaSource, true, false);
             exoPlayer.setPlayWhenReady(true);
             exoPlayer.setRepeatMode(Player.REPEAT_MODE_ALL);
+            loadPlayingState();
         }
     }
 
@@ -318,6 +325,28 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     public void onPlayerError(ExoPlaybackException error) {
         error.printStackTrace();
         exoPlayer.stop();
+    }
+
+    private void savePlayingState() {
+
+        SharedPreferences sharedPref = getApplicationContext().getSharedPreferences(
+                MusicPlayerService.class.getSimpleName(), Context.MODE_PRIVATE);
+        SharedPreferences.Editor  editor = sharedPref.edit();
+        editor.putInt(MUSIC_INDEX, exoPlayer.getCurrentWindowIndex());
+        editor.putLong(MUSIC_POSITION, exoPlayer.getCurrentPosition());
+        editor.apply();
+    }
+
+    private void loadPlayingState() {
+
+        SharedPreferences sharedPref = getApplicationContext().getSharedPreferences(
+                MusicPlayerService.class.getSimpleName(), Context.MODE_PRIVATE);
+
+        int defaultIndex = 0;
+        int defaultPosition = 0;
+        int index = sharedPref.getInt(MUSIC_INDEX, defaultIndex);
+        long position = sharedPref.getLong(MUSIC_POSITION, defaultPosition);
+        exoPlayer.seekTo(index, position);
     }
 
     /**

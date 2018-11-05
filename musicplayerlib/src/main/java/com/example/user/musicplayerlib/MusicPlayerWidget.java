@@ -27,7 +27,7 @@ public class MusicPlayerWidget extends AppWidgetProvider {
 
             views.setOnClickPendingIntent(R.id.play, playPauseAction);
             views.setOnClickPendingIntent(R.id.next, nextAction);
-            views.setOnClickPendingIntent(R.id.next, previousAction);
+            views.setOnClickPendingIntent(R.id.previous, previousAction);
 
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
