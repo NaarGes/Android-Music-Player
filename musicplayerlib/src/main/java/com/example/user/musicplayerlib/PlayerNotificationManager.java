@@ -106,8 +106,8 @@ class PlayerNotificationManager {
 
     }
 
+    @SuppressLint("StaticFieldLeak")
     private class UpdateNotification extends AsyncTask<Uri, Void, Song> {
-
 
         @Override
         protected Song doInBackground(Uri... uris) {
@@ -140,7 +140,6 @@ class PlayerNotificationManager {
 
             Log.e(TAG, "onPostExecute: "+song.getTitle()+ " "+ song.getArtist() + song.getAlbumArt() );
 
-            // fixme builder should be new or cleaned
             builder.setContentTitle(song.getTitle())
                     .setContentText(song.getArtist());
 
