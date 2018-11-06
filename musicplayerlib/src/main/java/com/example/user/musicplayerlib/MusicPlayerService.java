@@ -149,7 +149,7 @@ public class MusicPlayerService extends Service implements Player.EventListener,
 
         Log.e(TAG, "onTracksChanged: " + trackGroups.length + " " + trackGroups);
         Log.e(TAG, "onTracksChanged: " + trackSelections.length + " " + trackSelections);
-        //notificationManager.updateNotification(playListUri.get(exoPlayer.getCurrentPeriodIndex()));
+        notificationManager.updateNotification(playListUri.get(exoPlayer.getCurrentPeriodIndex()));
 
     }
 

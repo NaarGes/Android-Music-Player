@@ -2,7 +2,9 @@ package com.example.user.musicplayerlib;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
@@ -10,6 +12,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
@@ -71,7 +74,7 @@ class PlayerNotificationManager {
 
         Intent notificationIntent = new Intent(service, PlayerActivity.class);
         PendingIntent contentPendingIntent = PendingIntent.getActivity
-                (service, 0, notificationIntent, 0);
+                (service, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         builder
                 .setStyle(new android.support.v4.media.app.NotificationCompat.MediaStyle()
@@ -123,7 +126,7 @@ class PlayerNotificationManager {
 
             byte[] art = retriever.getEmbeddedPicture();
 
-            if(art != null)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 song.setAlbumArt(BitmapFactory.decodeByteArray(art, 0, art.length));
             else
                 song.setAlbumArt(BitmapFactory.decodeResource(service.getResources(), R.drawable.ic_music));
@@ -137,14 +140,19 @@ class PlayerNotificationManager {
         protected void onPostExecute(Song song) {
             super.onPostExecute(song);
 
+            Log.e(TAG, "onPostExecute: "+song.getTitle()+ " "+ song.getArtist() + song.getAlbumArt() );
+
             // fixme builder should be new or cleaned
             builder.setContentTitle(song.getTitle())
                     .setContentText(song.getArtist());
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 builder.setLargeIcon(song.getAlbumArt());
-
-            builder.build();
+            else
+                builder.setSmallIcon(R.drawable.ic_music);
+            NotificationManager notificationManagerCompat =
+                    (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManagerCompat.notify(10, builder.build());
         }
     }
 }
