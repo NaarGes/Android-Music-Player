@@ -12,7 +12,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
@@ -22,13 +21,14 @@ import java.util.HashMap;
 import static com.example.user.musicplayerlib.Util.CHANNEL_ID;
 import static com.google.android.exoplayer2.ExoPlayerLibraryInfo.TAG;
 
-// TODO notification image
-// TODO handle widget changes here (play/pause icon - song details)
+// TODO check notification image
 class PlayerNotificationManager {
 
     private MusicPlayerService service;
     private Song song;
     private NotificationCompat.Builder builder;
+
+    private static final int NOTIFICATION_ID = 10;
 
     PlayerNotificationManager(MusicPlayerService service) {
 
@@ -36,8 +36,6 @@ class PlayerNotificationManager {
         song = new Song();
     }
 
-    // FIXME call it when track changes
-    // FIXME update notification ui after running thread
     void updateNotification(Uri musicUri) {
 
         Log.e(TAG, "updateNotification: " + musicUri);
@@ -97,9 +95,9 @@ class PlayerNotificationManager {
             builder.setSmallIcon(R.drawable.ic_music);
 
         if (build.getState() == PlaybackStateCompat.STATE_PLAYING)
-            service.startForeground(10, builder.build());
+            service.startForeground(NOTIFICATION_ID, builder.build());
         else {
-            service.startForeground(10, builder.build());
+            service.startForeground(NOTIFICATION_ID, builder.build());
             service.stopForeground(false);
         }
     }
@@ -152,7 +150,7 @@ class PlayerNotificationManager {
                 builder.setSmallIcon(R.drawable.ic_music);
             NotificationManager notificationManagerCompat =
                     (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
-            notificationManagerCompat.notify(10, builder.build());
+            notificationManagerCompat.notify(NOTIFICATION_ID, builder.build());
         }
     }
 }

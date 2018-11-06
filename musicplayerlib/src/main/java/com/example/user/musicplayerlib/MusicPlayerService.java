@@ -30,7 +30,6 @@ import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
-import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
@@ -49,6 +48,8 @@ public class MusicPlayerService extends Service implements Player.EventListener,
     private static final String LOG_TAG = MusicPlayerService.class.getSimpleName();
     private static final String MUSIC_INDEX = "Current Music Index";
     private static final String MUSIC_POSITION = "Current Music Position";
+    private static final String REPEAT_MODE = "Repeat Mode";
+    private static final String SHUFFLE_MODE = "Shuffle Mode";
 
     private final IBinder binder = new MyBinder();
     private SimpleExoPlayer exoPlayer;
@@ -261,7 +262,6 @@ public class MusicPlayerService extends Service implements Player.EventListener,
             MediaSource mediaSource = buildMediaSource(generatePlayListUri());
             exoPlayer.prepare(mediaSource, true, false);
             exoPlayer.setPlayWhenReady(true);
-            exoPlayer.setRepeatMode(Player.REPEAT_MODE_ALL);
             loadPlayingState();
         }
     }
@@ -345,6 +345,8 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         SharedPreferences.Editor  editor = sharedPref.edit();
         editor.putInt(MUSIC_INDEX, exoPlayer.getCurrentWindowIndex());
         editor.putLong(MUSIC_POSITION, exoPlayer.getCurrentPosition());
+        editor.putInt(REPEAT_MODE, exoPlayer.getRepeatMode());
+        editor.putBoolean(SHUFFLE_MODE, exoPlayer.getShuffleModeEnabled());
         editor.apply();
     }
 
@@ -358,6 +360,8 @@ public class MusicPlayerService extends Service implements Player.EventListener,
         int index = sharedPref.getInt(MUSIC_INDEX, defaultIndex);
         long position = sharedPref.getLong(MUSIC_POSITION, defaultPosition);
         exoPlayer.seekTo(index, position);
+        exoPlayer.setRepeatMode(sharedPref.getInt(REPEAT_MODE, Player.REPEAT_MODE_ALL));
+        exoPlayer.setShuffleModeEnabled(sharedPref.getBoolean(SHUFFLE_MODE, false));
     }
 
     /**
