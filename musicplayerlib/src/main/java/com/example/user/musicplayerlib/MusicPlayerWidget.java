@@ -25,9 +25,9 @@ public class MusicPlayerWidget extends AppWidgetProvider {
             PendingIntent previousAction
                     = MediaButtonReceiver.buildMediaButtonPendingIntent(context, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
 
-            views.setOnClickPendingIntent(R.id.play, playPauseAction);
-            views.setOnClickPendingIntent(R.id.next, nextAction);
-            views.setOnClickPendingIntent(R.id.previous, previousAction);
+            views.setOnClickPendingIntent(R.id.widget_play, playPauseAction);
+            views.setOnClickPendingIntent(R.id.widget_next, nextAction);
+            views.setOnClickPendingIntent(R.id.widget_previous, previousAction);
 
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
